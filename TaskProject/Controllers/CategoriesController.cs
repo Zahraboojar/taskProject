@@ -21,7 +21,11 @@ namespace TaskProject.Controllers
         // GET: Categories
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Categories.ToListAsync());
+            var categories = await _context.Categories
+                .FromSqlInterpolated($"EXEC dbo.SelectCategories")
+                .ToListAsync();
+
+            return View(categories);
         }
 
         // GET: Categories/Details/5
@@ -32,8 +36,10 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var category = (await _context.Categories
+    .FromSqlInterpolated($"EXEC dbo.CategoryDetail {id}")
+    .ToListAsync())
+    .SingleOrDefault();
             if (category == null)
             {
                 return NotFound();
@@ -57,8 +63,10 @@ namespace TaskProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(category);
-                await _context.SaveChangesAsync();
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                     $"EXEC dbo.InsertCategory {category.Title}, {category.Description}");
+                //_context.Add(category);
+                //await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
             }
             return View(category);
@@ -72,7 +80,10 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var category = await _context.Categories.FindAsync(id);
+            var category = (await _context.Categories
+    .FromSqlInterpolated($"EXEC dbo.CategoryDetail {id}")
+    .ToListAsync())
+    .SingleOrDefault();
             if (category == null)
             {
                 return NotFound();
@@ -96,8 +107,10 @@ namespace TaskProject.Controllers
             {
                 try
                 {
-                    _context.Update(category);
-                    await _context.SaveChangesAsync();
+                    await _context.Database.ExecuteSqlInterpolatedAsync(
+                         $"EXEC dbo.UpdateCategory {category.Title}, {category.Description}, {id}");
+                    //_context.Update(category);
+                    //await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -123,8 +136,10 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var category = (await _context.Categories
+    .FromSqlInterpolated($"EXEC dbo.CategoryDetail {id}")
+    .ToListAsync())
+    .SingleOrDefault();
             if (category == null)
             {
                 return NotFound();
@@ -141,10 +156,12 @@ namespace TaskProject.Controllers
             var category = await _context.Categories.FindAsync(id);
             if (category != null)
             {
-                _context.Categories.Remove(category);
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                         $"EXEC dbo.DeleteCategory {id}");
+                //_context.Categories.Remove(category);
             }
 
-            await _context.SaveChangesAsync();
+            //await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

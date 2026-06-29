@@ -20,16 +20,22 @@ namespace TaskProject.Controllers
         }
 
         // GET: Tasks
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(TasksStatus? status)
         {
-            var tasks = await _context.Tasks
-       .Include(t => t.CategoryTasks)
-       .ThenInclude(ct => ct.Category)
-       .ToListAsync();
+            var query = _context.Tasks
+                .Include(t => t.CategoryTasks)
+                .ThenInclude(ct => ct.Category)
+                .AsQueryable();
+
+            if (status.HasValue)
+            {
+                query = query.Where(x => x.Status == status.Value);
+            }
+
+            var tasks = await query.ToListAsync();
 
             return View(tasks);
         }
-
         // GET: Tasks/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -38,8 +44,10 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var task = await _context.Tasks
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var task = (await _context.Tasks
+    .FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
+    .ToListAsync())
+    .SingleOrDefault();
             if (task == null)
             {
                 return NotFound();
@@ -72,12 +80,14 @@ namespace TaskProject.Controllers
         {
             if (!ModelState.IsValid)
             {
-                vm.Categories = _context.Categories
-                    .Select(c => new SelectListItem
-                    {
-                        Value = c.Id.ToString(),
-                        Text = c.Title
-                    }).ToList();
+                var categories = await _context.Categories
+                .FromSqlInterpolated($"EXEC dbo.SelectCategories")
+                .ToListAsync();
+                vm.Categories = categories.Select(c => new SelectListItem
+                {
+                    Value = c.Id.ToString(),
+                    Text = c.Title
+                }).ToList();
 
                 return View(vm);
             }
@@ -88,23 +98,31 @@ namespace TaskProject.Controllers
                 Description = vm.Description,
                 Status = vm.Status
             };
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                        $"EXEC dbo.InsertTask {task.Title}, {task.Description}, {task.Status}");
+            //_context.Tasks.Add(task);
+            //await _context.SaveChangesAsync();
 
-            _context.Tasks.Add(task);
-            await _context.SaveChangesAsync();
+            var newTaskId = await _context.Tasks
+    .OrderByDescending(t => t.Id)
+    .Select(t => t.Id)
+    .FirstOrDefaultAsync();
 
             foreach (var id in vm.SelectedCategoryIds)
             {
                 if (id != 0)
                 {
-                    _context.CategoryTasks.Add(new CategoryTask
-                    {
-                        TaskId = task.Id,
-                        CategoryId = id
-                    });
+                    await _context.Database.ExecuteSqlInterpolatedAsync(
+                        $"EXEC dbo.InsertCategoryTask {id},{newTaskId}");
+                    //_context.CategoryTasks.Add(new CategoryTask
+                    //{
+                    //    TaskId = task.Id,
+                    //    CategoryId = id
+                    //});
                 }
             }
 
-            await _context.SaveChangesAsync();
+            //await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
@@ -115,10 +133,16 @@ namespace TaskProject.Controllers
             if (id == null)
                 return NotFound();
 
-            var task = await _context.Tasks.FindAsync(id);
+            var task = (await _context.Tasks
+.FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
+.ToListAsync())
+.SingleOrDefault();
 
             if (task == null)
                 return NotFound();
+            var categories = await _context.Categories
+               .FromSqlInterpolated($"EXEC dbo.SelectCategories")
+               .ToListAsync();
 
             var vm = new TaskViewModel
             {
@@ -127,7 +151,7 @@ namespace TaskProject.Controllers
                 Description = task.Description,
                 Status = task.Status,
 
-                Categories = _context.Categories
+                Categories = categories
                     .Select(c => new SelectListItem
                     {
                         Value = c.Id.ToString(),
@@ -150,7 +174,10 @@ namespace TaskProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(TaskViewModel vm)
         {
-            var task = await _context.Tasks.FindAsync(vm.Id);
+            var task = (await _context.Tasks
+.FromSqlInterpolated($"EXEC dbo.TaskDetail {vm.Id}")
+.ToListAsync())
+.SingleOrDefault();
 
             if (task == null)
                 return NotFound();
@@ -159,21 +186,25 @@ namespace TaskProject.Controllers
             task.Description = vm.Description;
             task.Status = vm.Status;
 
-            var old = _context.CategoryTasks
-                .Where(x => x.TaskId == task.Id);
+            //var old = _context.CategoryTasks
+            //    .Where(x => x.TaskId == task.Id);
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                        $"EXEC dbo.DeleteCategoryByTaskIDTask {task.Id}");
 
-            _context.CategoryTasks.RemoveRange(old);
+            //_context.CategoryTasks.RemoveRange(old);
 
             foreach (var id in vm.SelectedCategoryIds)
             {
-                _context.CategoryTasks.Add(new CategoryTask
-                {
-                    TaskId = task.Id,
-                    CategoryId = id
-                });
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                        $"EXEC dbo.InsertCategoryTask {id}, {task.Id}");
+                //_context.CategoryTasks.Add(new CategoryTask
+                //{
+                //    TaskId = task.Id,
+                //    CategoryId = id
+                //});
             }
 
-            await _context.SaveChangesAsync();
+            //await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));
         }
@@ -186,8 +217,10 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var task = await _context.Tasks
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var task = (await _context.Tasks
+ .FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
+ .ToListAsync())
+ .SingleOrDefault();
             if (task == null)
             {
                 return NotFound();
@@ -204,10 +237,12 @@ namespace TaskProject.Controllers
             var task = await _context.Tasks.FindAsync(id);
             if (task != null)
             {
-                _context.Tasks.Remove(task);
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                         $"EXEC dbo.DeleteTask {id}");
+                //_context.Tasks.Remove(task);
             }
 
-            await _context.SaveChangesAsync();
+            //await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 

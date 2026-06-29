@@ -1,11 +1,30 @@
-﻿@model IEnumerable<TaskProject.Models.Task>
+﻿@using TaskProject;
+@model IEnumerable<TaskProject.Models.Task>
 
 @{
     ViewData["Title"] = "Index";
 }
 
 <h1>Index</h1>
+<form asp-action="Index" method="get">
 
+    <select name="status" class="form-select">
+        <option value="">همه وضعیت‌ها</option>
+
+        @foreach (TasksStatus item in Enum.GetValues(typeof(TasksStatus)))
+        {
+            <option value="@item">
+                @item.GetDisplayName()
+            </option>
+        }
+
+    </select>
+
+    <button type="submit" class="btn btn-primary">
+        جستجو
+    </button>
+
+</form>
 <p>
     <a asp-action="Create">Create New</a>
 </p>
