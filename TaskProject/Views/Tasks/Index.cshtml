@@ -1,5 +1,5 @@
 ﻿@using TaskProject;
-@model IEnumerable<TaskProject.Models.Task>
+@model IEnumerable<TaskProject.ViewModels.TaskViewModel>
 
 @{
     ViewData["Title"] = "Index";
@@ -13,7 +13,7 @@
 
         @foreach (TasksStatus item in Enum.GetValues(typeof(TasksStatus)))
         {
-            <option value="@item">
+            <option value="@item" selected="@(ViewData["status"]?.ToString() == item.ToString())">
                 @item.GetDisplayName()
             </option>
         }
@@ -41,7 +41,7 @@
                 @Html.DisplayNameFor(model => model.Status)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.CategoryTasks)
+                @Html.DisplayNameFor(model => model.Categories)
             </th>
             <th></th>
         </tr>
@@ -59,15 +59,16 @@
                 @Html.DisplayFor(modelItem => item.Status)
             </td>
                 <td>
-                    @foreach (var category in item.CategoryTasks)
+                    @foreach (var category in item.Categories)
                     {
-                        @category.Category.Title
+                        @category.Text
                         <br />
                     }
                 </td>
             <td>
                 <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
+                    <a asp-action="ChangeStatus" asp-route-id="@item.Id">Change Status</a> |
                 <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
             </td>
         </tr>

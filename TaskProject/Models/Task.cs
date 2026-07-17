@@ -12,6 +12,4 @@ public partial class Task
     public string? Description { get; set; }
 
     public TasksStatus Status { get; set; } = TasksStatus.Pending;
-
-    public virtual ICollection<CategoryTask> CategoryTasks { get; set; } = new List<CategoryTask>();
 }

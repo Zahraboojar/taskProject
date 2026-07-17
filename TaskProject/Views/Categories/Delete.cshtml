@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Delete";
+    bool showConfirm = Convert.ToBoolean(ViewData["IsShowConfirmAlert"]);
 }
 
 <h1>Delete</h1>
@@ -27,7 +28,25 @@
     
     <form asp-action="Delete">
         <input type="hidden" asp-for="Id" />
-        <input type="submit" value="Delete" class="btn btn-danger" /> |
+        @if (showConfirm)
+        {
+            <input type="submit"
+                   value="Delete"
+                   class="btn btn-danger"
+                   onclick="return IsConfirm();" />
+        }
+        else
+        {
+            <input type="submit"
+                   value="Delete"
+                   class="btn btn-danger" />
+        }
+ |
         <a asp-action="Index">Back to List</a>
     </form>
 </div>
+<script>
+    function IsConfirm() {
+        return confirm("این دسته‌بندی در تسک‌هایی استفاده شده است. آیا مطمئن هستید؟");
+    }
+</script>

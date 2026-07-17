@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using TaskProject.Models;
 
 namespace TaskProject.ViewModels
 {

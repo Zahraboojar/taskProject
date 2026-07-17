@@ -145,6 +145,15 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
+            var count = (await _context.Categories
+    .FromSqlInterpolated($"EXEC dbo.SelectCategoryTask {id}")
+    .ToListAsync()).Count;
+
+            ViewData["IsShowConfirmAlert"] = false;
+            if (count > 0)
+            {
+                ViewData["IsShowConfirmAlert"] = true;
+            }
             return View(category);
         }
 

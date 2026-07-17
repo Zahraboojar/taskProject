@@ -21,11 +21,15 @@ public partial class TaskDbContext : DbContext
 
     public virtual DbSet<Task> Tasks { get; set; }
 
+    public DbSet<TaskCategoryDto> TaskCategoryDtos { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         => optionsBuilder.UseSqlServer("Name=ConnectionStrings:DefaultConnection");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<TaskCategoryDto>().HasNoKey();
+
         modelBuilder.Entity<Category>(entity =>
         {
             entity.Property(e => e.Id).HasColumnName("ID");
@@ -42,12 +46,12 @@ public partial class TaskDbContext : DbContext
             entity.Property(e => e.CategoryId).HasColumnName("CategoryID");
             entity.Property(e => e.TaskId).HasColumnName("TaskID");
 
-            entity.HasOne(d => d.Category).WithMany(p => p.CategoryTasks)
+            entity.HasOne(d => d.Category).WithMany()
                 .HasForeignKey(d => d.CategoryId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_CategoryTask_Category");
 
-            entity.HasOne(d => d.Task).WithMany(p => p.CategoryTasks)
+            entity.HasOne(d => d.Task).WithMany()
                 .HasForeignKey(d => d.TaskId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_CategoryTask_Task");

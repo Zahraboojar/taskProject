@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TaskProject.Models;
 using TaskProject.ViewModels;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TaskProject.Controllers
 {
@@ -22,19 +23,39 @@ namespace TaskProject.Controllers
         // GET: Tasks
         public async Task<IActionResult> Index(TasksStatus? status)
         {
-            var query = _context.Tasks
-                .Include(t => t.CategoryTasks)
-                .ThenInclude(ct => ct.Category)
-                .AsQueryable();
+            ViewData["status"] = status;
 
-            if (status.HasValue)
-            {
-                query = query.Where(x => x.Status == status.Value);
-            }
+            var data = await _context.TaskCategoryDtos
+                .FromSqlInterpolated($"EXEC dbo.SelectTasksWithCategories")
+                .ToListAsync();
 
-            var tasks = await query.ToListAsync();
+            var vmList = data
+                .GroupBy(x => new
+                {
+                    x.Id,
+                    x.Title,
+                    x.Description,
+                    x.Status
+                })
+                .Select(g => new TaskViewModel
+                {
+                    Id = g.Key.Id,
+                    Title = g.Key.Title,
+                    Description = g.Key.Description,
+                    Status = g.Key.Status,
 
-            return View(tasks);
+                    Categories = g
+                        .Where(x => x.CategoryId != null)
+                        .Select(x => new SelectListItem
+                        {
+                            Value = x.CategoryId!.Value.ToString(),
+                            Text = x.CategoryTitle!
+                        })
+                        .ToList()
+                })
+                .ToList();
+
+            return View(vmList);
         }
         // GET: Tasks/Details/5
         public async Task<IActionResult> Details(int? id)
@@ -96,7 +117,7 @@ namespace TaskProject.Controllers
             {
                 Title = vm.Title,
                 Description = vm.Description,
-                Status = vm.Status
+                Status = TasksStatus.Pending,
             };
             await _context.Database.ExecuteSqlInterpolatedAsync(
                         $"EXEC dbo.InsertTask {task.Title}, {task.Description}, {task.Status}");
@@ -149,7 +170,7 @@ namespace TaskProject.Controllers
                 Id = task.Id,
                 Title = task.Title,
                 Description = task.Description,
-                Status = task.Status,
+                //Status = task.Status,
 
                 Categories = categories
                     .Select(c => new SelectListItem
@@ -170,6 +191,7 @@ namespace TaskProject.Controllers
         // POST: Tasks/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(TaskViewModel vm)
@@ -203,8 +225,49 @@ namespace TaskProject.Controllers
                 //    CategoryId = id
                 //});
             }
-
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                      $"EXEC dbo.UpdateTask {task.Title}, {task.Description}, {task.Id}");
             //await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
+        }
+
+
+        // GET: Tasks/ChangeStatus/5
+        public async Task<IActionResult> ChangeStatus(int? id)
+        {
+            if (id == null)
+                return NotFound();
+
+            var task = (await _context.Tasks
+.FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
+.ToListAsync())
+.SingleOrDefault();
+
+            if (task == null)
+                return NotFound();
+
+            return View(task);
+        }
+
+        // POST: Tasks/ChangeStatus/5
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ChangeStatus(Models.Task data)
+        {
+            var task = (await _context.Tasks
+.FromSqlInterpolated($"EXEC dbo.TaskDetail {data.Id}")
+.ToListAsync())
+.SingleOrDefault();
+
+            if (task == null)
+                return NotFound();
+
+            task.Status = data.Status;
+
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                       $"EXEC dbo.ChangeTaskStatus {data.Status}, {task.Id}");
 
             return RedirectToAction(nameof(Index));
         }
