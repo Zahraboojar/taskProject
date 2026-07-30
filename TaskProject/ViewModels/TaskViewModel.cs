@@ -13,7 +13,7 @@ namespace TaskProject.ViewModels
 
         public TasksStatus Status { get; set; }
 
-        public List<int> SelectedCategoryIds { get; set; } = new();
+        public List<int>? SelectedCategoryIds { get; set; } = new();
 
         public List<SelectListItem> Categories { get; set; } = new();
     }

@@ -26,11 +26,10 @@
                 <label asp-for="SelectedCategoryIds"></label>
                 <select asp-for="SelectedCategoryIds"
                         asp-items="Model.Categories"
-                        class="form-select"
-                        multiple>\
-                    <option value="0" selected></option>
-
+                        class="form-select select2"
+                        multiple>
                 </select>
+
                 <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
             </div>
             
@@ -48,3 +47,4 @@
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
+

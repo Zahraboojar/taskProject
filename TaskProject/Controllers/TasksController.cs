@@ -55,6 +55,10 @@ namespace TaskProject.Controllers
                 })
                 .ToList();
 
+            if (status != null)
+            {
+                vmList = vmList.Where(x => x.Status == status).ToList();
+            }
             return View(vmList);
         }
         // GET: Tasks/Details/5
@@ -99,6 +103,10 @@ namespace TaskProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(TaskViewModel vm)
         {
+            if (vm.SelectedCategoryIds == null)
+            {
+                vm.SelectedCategoryIds = new List<int>();
+            }
             if (!ModelState.IsValid)
             {
                 var categories = await _context.Categories
