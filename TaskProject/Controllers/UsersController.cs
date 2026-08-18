@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.Build.Utilities;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -70,8 +71,9 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var user = (await _context.Users
+                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
+                .SingleOrDefault();
             if (user == null)
             {
                 return NotFound();
@@ -95,8 +97,8 @@ namespace TaskProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(user);
-                await _context.SaveChangesAsync();
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                      $"EXEC dbo.InsertTask {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}");
                 return RedirectToAction(nameof(Index));
             }
             return View(user);
@@ -110,7 +112,9 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users.FindAsync(id);
+            var user = (await _context.Users
+                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
+                .SingleOrDefault();
             if (user == null)
             {
                 return NotFound();
@@ -134,12 +138,12 @@ namespace TaskProject.Controllers
             {
                 try
                 {
-                    _context.Update(user);
-                    await _context.SaveChangesAsync();
+                    await _context.Database.ExecuteSqlInterpolatedAsync(
+                      $"EXEC dbo.UpdateTask {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}, {user.Id}");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!UserExists(user.Id))
+                    if (!await UserExists(user.Id))
                     {
                         return NotFound();
                     }
@@ -161,8 +165,9 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var user = (await _context.Users
+                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
+                .SingleOrDefault();
             if (user == null)
             {
                 return NotFound();
@@ -179,16 +184,23 @@ namespace TaskProject.Controllers
             var user = await _context.Users.FindAsync(id);
             if (user != null)
             {
-                _context.Users.Remove(user);
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                      $"EXEC dbo.DeleteTask {id}");
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                     $"EXEC dbo.DeleteTaskUserByUserID {id}");
             }
 
-            await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool UserExists(int id)
+        private async Task<bool> UserExists(int id)
         {
-            return _context.Users.Any(e => e.Id == id);
+            var user = await _context.UserWithTaskListDto
+               .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}")
+               .ToListAsync();
+            if (user == null)
+                return false;
+            return true;
         }
     }
 }
