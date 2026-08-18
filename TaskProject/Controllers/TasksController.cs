@@ -26,7 +26,7 @@ namespace TaskProject.Controllers
             ViewData["status"] = status;
 
             var data = await _context.TaskDetailsDto
-                .FromSqlInterpolated($"EXEC dbo.SelectTasksWithCategories")
+                .FromSqlInterpolated($"EXEC dbo.SelectTasksWithDetails {status}")
                 .ToListAsync();
 
             var vmList = data
@@ -103,6 +103,12 @@ namespace TaskProject.Controllers
                     Value = c.Id.ToString(),
                     Text = c.Title
                 }).ToList();
+            vm.Users = _context.Users
+               .Select(c => new SelectListItem
+               {
+                   Value = c.Id.ToString(),
+                   Text = $"{c.FullName} ( {c.NationalCode} )"
+               }).ToList();
 
             return View(vm);
         }
@@ -161,6 +167,14 @@ namespace TaskProject.Controllers
                     //});
                 }
             }
+            foreach (var id in vm.SelectedUserIds)
+            {
+                if (id != 0)
+                {
+                    await _context.Database.ExecuteSqlInterpolatedAsync(
+                        $"EXEC dbo.InsertTaskUser {id},{newTaskId}");
+                }
+            }
 
             //await _context.SaveChangesAsync();
 
@@ -183,6 +197,9 @@ namespace TaskProject.Controllers
             var categories = await _context.Categories
                .FromSqlInterpolated($"EXEC dbo.SelectCategories")
                .ToListAsync();
+            var users = await _context.Users
+               .FromSqlInterpolated($"EXEC dbo.SelectUsers")
+               .ToListAsync();
 
             var vm = new TaskViewModel
             {
@@ -197,12 +214,24 @@ namespace TaskProject.Controllers
                         Value = c.Id.ToString(),
                         Text = c.Title
                     }).ToList(),
+                Users = users
+                    .Select(c => new SelectListItem
+                    {
+                        Value = c.Id.ToString(),
+                        Text = $"{c.FullName} ( {c.NationalCode} )"
+                    }).ToList(),
 
                 SelectedCategoryIds = _context.CategoryTasks
                     .Where(ct => ct.TaskId == task.Id)
                     .Select(ct => ct.CategoryId)
                     .ToList()
+            ,
+                SelectedUserIds = _context.TaskUsers
+                    .Where(ct => ct.TaskId == task.Id)
+                    .Select(ct => ct.UserId)
+                    .ToList()
             };
+
 
             return View(vm);
         }
@@ -231,6 +260,8 @@ namespace TaskProject.Controllers
             //    .Where(x => x.TaskId == task.Id);
             await _context.Database.ExecuteSqlInterpolatedAsync(
                         $"EXEC dbo.DeleteCategoryByTaskIDTask {task.Id}");
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                        $"EXEC dbo.DeleteUserByTaskIDTask {task.Id}");
 
             //_context.CategoryTasks.RemoveRange(old);
 
@@ -238,6 +269,16 @@ namespace TaskProject.Controllers
             {
                 await _context.Database.ExecuteSqlInterpolatedAsync(
                         $"EXEC dbo.InsertCategoryTask {id}, {task.Id}");
+                //_context.CategoryTasks.Add(new CategoryTask
+                //{
+                //    TaskId = task.Id,
+                //    CategoryId = id
+                //});
+            }
+            foreach (var id in vm.SelectedUserIds)
+            {
+                await _context.Database.ExecuteSqlInterpolatedAsync(
+                        $"EXEC dbo.InsertTaskUser {id}, {task.Id}");
                 //_context.CategoryTasks.Add(new CategoryTask
                 //{
                 //    TaskId = task.Id,

@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc.Rendering;
-using TaskProject.Models;
+﻿using Microsoft.EntityFrameworkCore;
 
-namespace TaskProject.ViewModels
+namespace TaskProject.Models
 {
-    public class UserViewModel
+    [Keyless]
+    public class UserWithTaskListDto
     {
         public int Id { get; set; }
 
@@ -16,8 +16,11 @@ namespace TaskProject.ViewModels
         public string? Email { get; set; }
 
         public string? Username { get; set; }
-        public List<int> SelectedTaskIds { get; set; } = new();
 
-        public List<SelectListItem> Tasks { get; set; } = new();
+        public string? PasswordHash { get; set; }
+
+        public int? TaskId { get; set; }
+
+        public string? TaskTitle { get; set; }
     }
 }

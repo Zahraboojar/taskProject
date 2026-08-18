@@ -32,6 +32,15 @@
 
                 <span asp-validation-for="SelectedCategoryIds" class="text-danger"></span>
             </div>
+            <div class="form-group">
+                <label asp-for="SelectedUserIds"></label>
+                <select asp-for="SelectedUserIds"
+                        asp-items="Model.Users"
+                        class="form-select select2"
+                        multiple>
+                </select>
+                <span asp-validation-for="SelectedUserIds" class="text-danger"></span>
+            </div>
             
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />

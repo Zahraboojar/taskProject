@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using TaskProject.Models;
+using TaskProject.ViewModels;
 
 namespace TaskProject.Controllers
 {
@@ -21,7 +22,44 @@ namespace TaskProject.Controllers
         // GET: Users
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Users.ToListAsync());
+            //return View(await _context.Users.ToListAsync());
+            var data = await _context.UserWithTaskListDto
+                .FromSqlInterpolated($"EXEC dbo.SelectUsersWithTaskList")
+                .ToListAsync();
+
+            var vmList = data
+     .GroupBy(x => new
+     {
+         x.Id,
+         x.PhoneNumber,
+         x.FullName,
+         x.Username,
+         x.Email,
+         x.NationalCode,
+     })
+     .Select(g => new UserViewModel
+     {
+         Id = g.Key.Id,
+         FullName = g.Key.FullName,
+         PhoneNumber = g.Key.PhoneNumber,
+         Email = g.Key.Email,
+         Username = g.Key.Username,
+         NationalCode = g.Key.NationalCode,
+
+         Tasks = g
+             .Where(x => x.TaskId != null)
+             .GroupBy(x => x.TaskId)
+             .Select(x => new SelectListItem
+             {
+                 Value = x.Key!.Value.ToString(),
+                 Text = x.First().TaskTitle!
+             })
+             .ToList(),
+
+     })
+     .ToList();
+
+            return View(vmList);
         }
 
         // GET: Users/Details/5
