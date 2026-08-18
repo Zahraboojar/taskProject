@@ -21,15 +21,16 @@ public partial class TaskDbContext : DbContext
 
     public virtual DbSet<Task> Tasks { get; set; }
 
+    public virtual DbSet<TaskUser> TaskUsers { get; set; }
+
     public DbSet<TaskCategoryDto> TaskCategoryDtos { get; set; }
+    public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        => optionsBuilder.UseSqlServer("Name=ConnectionStrings:DefaultConnection");
+        => optionsBuilder.UseSqlServer("Server=.;Database=TaskDb;Trusted_Connection=True;TrustServerCertificate=True;");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<TaskCategoryDto>().HasNoKey();
-
         modelBuilder.Entity<Category>(entity =>
         {
             entity.Property(e => e.Id).HasColumnName("ID");
@@ -48,12 +49,10 @@ public partial class TaskDbContext : DbContext
 
             entity.HasOne(d => d.Category).WithMany()
                 .HasForeignKey(d => d.CategoryId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_CategoryTask_Category");
 
             entity.HasOne(d => d.Task).WithMany()
                 .HasForeignKey(d => d.TaskId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_CategoryTask_Task");
         });
 
@@ -62,9 +61,40 @@ public partial class TaskDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("ID");
             entity.Property(e => e.Title).HasMaxLength(50);
         });
-        modelBuilder.Entity<Task>()
-    .Property(e => e.Status)
-    .HasConversion<int>();
+
+        modelBuilder.Entity<TaskUser>(entity =>
+        {
+            entity.ToTable("TaskUser");
+
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.TaskId).HasColumnName("TaskID");
+            entity.Property(e => e.UserId).HasColumnName("UserID");
+
+            entity.HasOne(d => d.Task).WithMany()
+                .HasForeignKey(d => d.TaskId)
+                .HasConstraintName("FK_TaskUser_Tasks");
+
+            entity.HasOne(d => d.User).WithMany()
+                .HasForeignKey(d => d.UserId)
+                .HasConstraintName("FK_TaskUser_Users");
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(e => e.Username, "IX_Users").IsUnique();
+
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.Email).HasMaxLength(50);
+            entity.Property(e => e.FullName).HasMaxLength(50);
+            entity.Property(e => e.NationalCode)
+                .HasMaxLength(10)
+                .IsFixedLength();
+            entity.Property(e => e.PasswordHash).HasMaxLength(100);
+            entity.Property(e => e.PhoneNumber)
+                .HasMaxLength(11)
+                .IsFixedLength();
+            entity.Property(e => e.Username).HasMaxLength(50);
+        });
 
         OnModelCreatingPartial(modelBuilder);
     }
