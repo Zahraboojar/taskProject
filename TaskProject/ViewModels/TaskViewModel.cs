@@ -16,5 +16,9 @@ namespace TaskProject.ViewModels
         public List<int> SelectedCategoryIds { get; set; } = new();
 
         public List<SelectListItem> Categories { get; set; } = new();
+
+        public List<int> SelectedUserIds { get; set; } = new();
+
+        public List<SelectListItem> Users { get; set; } = new();
     }
 }

@@ -43,6 +43,9 @@
             <th>
                 @Html.DisplayNameFor(model => model.Categories)
             </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Users)
+            </th>
             <th></th>
         </tr>
     </thead>
@@ -62,6 +65,13 @@
                     @foreach (var category in item.Categories)
                     {
                         @category.Text
+                        <br />
+                    }
+                </td>
+                <td>
+                    @foreach (var user in item.Users)
+                    {
+                        @user.Text
                         <br />
                     }
                 </td>

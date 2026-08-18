@@ -23,7 +23,7 @@ public partial class TaskDbContext : DbContext
 
     public virtual DbSet<TaskUser> TaskUsers { get; set; }
 
-    public DbSet<TaskCategoryDto> TaskCategoryDtos { get; set; }
+    public DbSet<TaskDetailsDto> TaskDetailsDto { get; set; }
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

@@ -25,35 +25,46 @@ namespace TaskProject.Controllers
         {
             ViewData["status"] = status;
 
-            var data = await _context.TaskCategoryDtos
+            var data = await _context.TaskDetailsDto
                 .FromSqlInterpolated($"EXEC dbo.SelectTasksWithCategories")
                 .ToListAsync();
 
             var vmList = data
-                .GroupBy(x => new
-                {
-                    x.Id,
-                    x.Title,
-                    x.Description,
-                    x.Status
-                })
-                .Select(g => new TaskViewModel
-                {
-                    Id = g.Key.Id,
-                    Title = g.Key.Title,
-                    Description = g.Key.Description,
-                    Status = g.Key.Status,
+     .GroupBy(x => new
+     {
+         x.Id,
+         x.Title,
+         x.Description,
+         x.Status
+     })
+     .Select(g => new TaskViewModel
+     {
+         Id = g.Key.Id,
+         Title = g.Key.Title,
+         Description = g.Key.Description,
+         Status = g.Key.Status,
 
-                    Categories = g
-                        .Where(x => x.CategoryId != null)
-                        .Select(x => new SelectListItem
-                        {
-                            Value = x.CategoryId!.Value.ToString(),
-                            Text = x.CategoryTitle!
-                        })
-                        .ToList()
-                })
-                .ToList();
+         Categories = g
+             .Where(x => x.CategoryId != null)
+             .GroupBy(x => x.CategoryId)
+             .Select(x => new SelectListItem
+             {
+                 Value = x.Key!.Value.ToString(),
+                 Text = x.First().CategoryTitle!
+             })
+             .ToList(),
+
+         Users = g
+             .Where(x => x.UserId != null)
+             .GroupBy(x => x.UserId)
+             .Select(x => new SelectListItem
+             {
+                 Value = x.Key!.Value.ToString(),
+                 Text = x.First().UserTitle!
+             })
+             .ToList()
+     })
+     .ToList();
 
             if (status != null)
             {

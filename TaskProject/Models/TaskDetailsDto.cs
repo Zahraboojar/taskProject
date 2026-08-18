@@ -3,7 +3,7 @@
 namespace TaskProject.Models
 {
     [Keyless]
-    public class TaskCategoryDto
+    public class TaskDetailsDto
     {
         public int Id { get; set; }
 
@@ -16,5 +16,9 @@ namespace TaskProject.Models
         public int? CategoryId { get; set; }
 
         public string? CategoryTitle { get; set; }
+
+        public int? UserId { get; set; }
+
+        public string? UserTitle { get; set; }
     }
 }
