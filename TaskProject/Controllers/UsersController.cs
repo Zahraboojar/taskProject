@@ -97,9 +97,29 @@ namespace TaskProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                      $"EXEC dbo.InsertTask {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}");
-                return RedirectToAction(nameof(Index));
+                try
+                {
+                    if (!await UserExists(user.Username))
+                    {
+                        await _context.Database.ExecuteSqlInterpolatedAsync(
+                              $"EXEC dbo.InsertUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}");
+                        return RedirectToAction(nameof(Index));
+                    }
+                    else
+                    {
+                        ModelState.AddModelError(
+                        "Username",
+                        "این نام کاربری قبلاً ثبت شده است."
+                    );
+                    }
+                }
+                catch (DbUpdateException)
+                {
+                    ModelState.AddModelError(
+                        "Username",
+                        "این نام کاربری قبلاً ثبت شده است."
+                    );
+                }
             }
             return View(user);
         }
@@ -133,13 +153,26 @@ namespace TaskProject.Controllers
             {
                 return NotFound();
             }
+            var oldUser = (await _context.Users
+                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
+                .SingleOrDefault();
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    await _context.Database.ExecuteSqlInterpolatedAsync(
-                      $"EXEC dbo.UpdateTask {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}, {user.Id}");
+                    if (!await UserExists(user.Username) || user.Username == oldUser?.Username)
+                    {
+                        await _context.Database.ExecuteSqlInterpolatedAsync(
+                          $"EXEC dbo.UpdateUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}, {user.Id}");
+                        return RedirectToAction(nameof(Index));
+                    } else
+                    {
+                        ModelState.AddModelError(
+                        "Username",
+                        "این نام کاربری قبلاً ثبت شده است."
+                    );
+                    }
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -152,7 +185,6 @@ namespace TaskProject.Controllers
                         throw;
                     }
                 }
-                return RedirectToAction(nameof(Index));
             }
             return View(user);
         }
@@ -181,11 +213,13 @@ namespace TaskProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = await _context.Users.FindAsync(id);
+            var user = (await _context.Users
+                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
+                .SingleOrDefault();
             if (user != null)
             {
                 await _context.Database.ExecuteSqlInterpolatedAsync(
-                      $"EXEC dbo.DeleteTask {id}");
+                      $"EXEC dbo.DeleteUser {id}");
                 await _context.Database.ExecuteSqlInterpolatedAsync(
                      $"EXEC dbo.DeleteTaskUserByUserID {id}");
             }
@@ -195,9 +229,20 @@ namespace TaskProject.Controllers
 
         private async Task<bool> UserExists(int id)
         {
-            var user = await _context.UserWithTaskListDto
+            var user = (await _context.Users
                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}")
-               .ToListAsync();
+               .ToListAsync())
+                .SingleOrDefault();
+            if (user == null)
+                return false;
+            return true;
+        }
+        private async Task<bool> UserExists(string username)
+        {
+            var user = (await _context.Users
+               .FromSqlInterpolated($"EXEC dbo.SelectUserWithUsername {username}")
+               .ToListAsync())
+                .SingleOrDefault();
             if (user == null)
                 return false;
             return true;
