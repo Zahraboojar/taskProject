@@ -1,13 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using TaskProject.Models;
 using TaskProject.ViewModels;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TaskProject.Controllers
 {
@@ -35,12 +31,14 @@ namespace TaskProject.Controllers
          x.Id,
          x.Title,
          x.Description,
+         x.DueDate,
          x.Status
      })
      .Select(g => new TaskViewModel
      {
          Id = g.Key.Id,
          Title = g.Key.Title,
+         DueDate = g.Key.DueDate,
          Description = g.Key.Description,
          Status = g.Key.Status,
 
@@ -72,6 +70,7 @@ namespace TaskProject.Controllers
             }
             return View(vmList);
         }
+
         // GET: Tasks/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -142,10 +141,11 @@ namespace TaskProject.Controllers
             {
                 Title = vm.Title,
                 Description = vm.Description,
+                DueDate = vm.DueDate,
                 Status = TasksStatus.Pending,
             };
             await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.InsertTask {task.Title}, {task.Description}, {task.Status}");
+                        $"EXEC dbo.InsertTask {task.Title}, {task.Description}, {task.DueDate}");
             //_context.Tasks.Add(task);
             //await _context.SaveChangesAsync();
 
@@ -206,6 +206,7 @@ namespace TaskProject.Controllers
                 Id = task.Id,
                 Title = task.Title,
                 Description = task.Description,
+                DueDate = task.DueDate,
                 //Status = task.Status,
 
                 Categories = categories
@@ -232,14 +233,12 @@ namespace TaskProject.Controllers
                     .ToList()
             };
 
-
             return View(vm);
         }
 
         // POST: Tasks/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(TaskViewModel vm)
@@ -254,7 +253,7 @@ namespace TaskProject.Controllers
 
             task.Title = vm.Title;
             task.Description = vm.Description;
-            task.Status = vm.Status;
+            task.DueDate = vm.DueDate;
 
             //var old = _context.CategoryTasks
             //    .Where(x => x.TaskId == task.Id);
@@ -286,7 +285,7 @@ namespace TaskProject.Controllers
                 //});
             }
             await _context.Database.ExecuteSqlInterpolatedAsync(
-                      $"EXEC dbo.UpdateTask {task.Title}, {task.Description}, {task.Id}");
+                      $"EXEC dbo.UpdateTask {task.Title}, {task.Description}, {task.DueDate}, {task.Id}");
             //await _context.SaveChangesAsync();
 
             return RedirectToAction(nameof(Index));

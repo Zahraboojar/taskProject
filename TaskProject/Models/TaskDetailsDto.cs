@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace TaskProject.Models
 {
@@ -10,6 +11,7 @@ namespace TaskProject.Models
         public string Title { get; set; } = null!;
 
         public string? Description { get; set; }
+        public DateOnly DueDate { get; set; } = new DateOnly();
 
         public TasksStatus Status { get; set; }
 

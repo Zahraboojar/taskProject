@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.Rendering;
+using System.ComponentModel.DataAnnotations;
 using TaskProject.Models;
 
 namespace TaskProject.ViewModels
@@ -10,6 +11,7 @@ namespace TaskProject.ViewModels
         public string Title { get; set; } = null!;
 
         public string? Description { get; set; }
+        public DateOnly? DueDate { get; set; }
 
         public TasksStatus Status { get; set; }
 
