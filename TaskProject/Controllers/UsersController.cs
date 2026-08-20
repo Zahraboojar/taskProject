@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using TaskProject.Models;
 using TaskProject.ViewModels;
@@ -101,8 +103,9 @@ namespace TaskProject.Controllers
                 {
                     if (!await UserExists(user.Username))
                     {
+                        var finalPass = GetMd5Hash(user.PasswordHash);
                         await _context.Database.ExecuteSqlInterpolatedAsync(
-                              $"EXEC dbo.InsertUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}");
+                              $"EXEC dbo.InsertUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {finalPass}");
                         return RedirectToAction(nameof(Index));
                     }
                     else
@@ -163,8 +166,9 @@ namespace TaskProject.Controllers
                 {
                     if (!await UserExists(user.Username) || user.Username == oldUser?.Username)
                     {
+                        var finalPass = GetMd5Hash(user.PasswordHash);
                         await _context.Database.ExecuteSqlInterpolatedAsync(
-                          $"EXEC dbo.UpdateUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {user.PasswordHash}, {user.Id}");
+                          $"EXEC dbo.UpdateUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {finalPass}, {user.Id}");
                         return RedirectToAction(nameof(Index));
                     } else
                     {
@@ -246,6 +250,18 @@ namespace TaskProject.Controllers
             if (user == null)
                 return false;
             return true;
+        }
+        public static string GetMd5Hash(string input)
+        {
+            using var md5 = MD5.Create();
+            byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+            byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+            var sb = new StringBuilder();
+            foreach (byte b in hashBytes)
+                sb.Append(b.ToString("x2"));  // خروجی هگزادسیمال ۳۲ کاراکتری
+
+            return sb.ToString();
         }
     }
 }
