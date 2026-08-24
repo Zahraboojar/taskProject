@@ -2,72 +2,36 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using TaskProject.Models;
+using TaskProject.Services;
 using TaskProject.ViewModels;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TaskProject.Controllers
 {
     public class TasksController : Controller
     {
+        private readonly ITaskService _taskService;
         private readonly TaskDbContext _context;
+        private readonly ICategoryService _categoryService;
+        private readonly IUserService _userService;
 
-        public TasksController(TaskDbContext context)
+        public TasksController(
+    TaskDbContext context,
+    ITaskService taskService,
+    ICategoryService categoryService,
+    IUserService userService)
         {
             _context = context;
+            _taskService = taskService;
+            _categoryService = categoryService;
+            _userService = userService;
         }
 
-        [NonAction]
-        public async Task<List<TaskViewModel>> GetAll()
-        {
-            var data = await _context.TaskDetailsDto
-                .FromSqlInterpolated($"EXEC dbo.SelectTasksWithDetails")
-                .ToListAsync();
-
-            var vmList = data
-     .GroupBy(x => new
-     {
-         x.Id,
-         x.Title,
-         x.Description,
-         x.DueDate,
-         x.Status
-     })
-     .Select(g => new TaskViewModel
-     {
-         Id = g.Key.Id,
-         Title = g.Key.Title,
-         DueDate = g.Key.DueDate,
-         Description = g.Key.Description,
-         Status = g.Key.Status,
-
-         Categories = g
-             .Where(x => x.CategoryId != null)
-             .GroupBy(x => x.CategoryId)
-             .Select(x => new SelectListItem
-             {
-                 Value = x.Key!.Value.ToString(),
-                 Text = x.First().CategoryTitle!
-             })
-             .ToList(),
-
-         Users = g
-             .Where(x => x.UserId != null)
-             .GroupBy(x => x.UserId)
-             .Select(x => new SelectListItem
-             {
-                 Value = x.Key!.Value.ToString(),
-                 Text = x.First().UserTitle!
-             })
-             .ToList()
-     })
-     .ToList();
-
-            return vmList;
-        }
         public async Task<IActionResult> Index(TaskFilterViewModel tfv)
         {
-            var dataList = await GetAll();
+            var dataList = await _taskService.GetAll();
 
             // Filter - Title
             if (!string.IsNullOrWhiteSpace(tfv.Title))
@@ -167,10 +131,7 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var task = (await _context.Tasks
-    .FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
-    .ToListAsync())
-    .SingleOrDefault();
+            var task = await _taskService.GetTask(id);
             if (task == null)
             {
                 return NotFound();
@@ -180,22 +141,15 @@ namespace TaskProject.Controllers
         }
 
         // GET: Tasks/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             var vm = new TaskViewModel();
 
-            vm.Categories = _context.Categories
-                .Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text = c.Title
-                }).ToList();
-            vm.Users = _context.Users
-               .Select(c => new SelectListItem
-               {
-                   Value = c.Id.ToString(),
-                   Text = $"{c.FullName} ( {c.NationalCode} )"
-               }).ToList();
+            var categories = await _categoryService.GetAll();
+            vm.Categories = _categoryService.GetAllSelcted(categories);
+
+            var users = await _userService.GetAll();
+            vm.Users = _userService.GetAllSelcted(users);
 
             return View(vm);
         }
@@ -213,58 +167,16 @@ namespace TaskProject.Controllers
             }
             if (!ModelState.IsValid)
             {
-                var categories = await _context.Categories
-                .FromSqlInterpolated($"EXEC dbo.SelectCategories")
-                .ToListAsync();
-                vm.Categories = categories.Select(c => new SelectListItem
-                {
-                    Value = c.Id.ToString(),
-                    Text = c.Title
-                }).ToList();
+                var categories = await _categoryService.GetAll();
+                vm.Categories = _categoryService.GetAllSelcted(categories);
+
+                var users = await _userService.GetAll();
+                vm.Users = _userService.GetAllSelcted(users);
 
                 return View(vm);
             }
 
-            var task = new Models.Task
-            {
-                Title = vm.Title,
-                Description = vm.Description,
-                DueDate = vm.DueDate,
-                Status = TasksStatus.Pending,
-            };
-            await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.InsertTask {task.Title}, {task.Description}, {task.DueDate}");
-            //_context.Tasks.Add(task);
-            //await _context.SaveChangesAsync();
-
-            var newTaskId = await _context.Tasks
-    .OrderByDescending(t => t.Id)
-    .Select(t => t.Id)
-    .FirstOrDefaultAsync();
-
-            foreach (var id in vm.SelectedCategoryIds)
-            {
-                if (id != 0)
-                {
-                    await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.InsertCategoryTask {id},{newTaskId}");
-                    //_context.CategoryTasks.Add(new CategoryTask
-                    //{
-                    //    TaskId = task.Id,
-                    //    CategoryId = id
-                    //});
-                }
-            }
-            foreach (var id in vm.SelectedUserIds)
-            {
-                if (id != 0)
-                {
-                    await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.InsertTaskUser {id},{newTaskId}");
-                }
-            }
-
-            //await _context.SaveChangesAsync();
+            await _taskService.InsertTask(vm);
 
             return RedirectToAction(nameof(Index));
         }
@@ -275,19 +187,13 @@ namespace TaskProject.Controllers
             if (id == null)
                 return NotFound();
 
-            var task = (await _context.Tasks
-.FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
-.ToListAsync())
-.SingleOrDefault();
+            var task = await _taskService.GetTask(id);
 
             if (task == null)
                 return NotFound();
-            var categories = await _context.Categories
-               .FromSqlInterpolated($"EXEC dbo.SelectCategories")
-               .ToListAsync();
-            var users = await _context.Users
-               .FromSqlInterpolated($"EXEC dbo.SelectUsers")
-               .ToListAsync();
+            var categories = await _categoryService.GetAll();
+
+            var users = await _userService.GetAll();
 
             var vm = new TaskViewModel
             {
@@ -295,20 +201,9 @@ namespace TaskProject.Controllers
                 Title = task.Title,
                 Description = task.Description,
                 DueDate = task.DueDate,
-                //Status = task.Status,
 
-                Categories = categories
-                    .Select(c => new SelectListItem
-                    {
-                        Value = c.Id.ToString(),
-                        Text = c.Title
-                    }).ToList(),
-                Users = users
-                    .Select(c => new SelectListItem
-                    {
-                        Value = c.Id.ToString(),
-                        Text = $"{c.FullName} ( {c.NationalCode} )"
-                    }).ToList(),
+                Categories =  _categoryService.GetAllSelcted(categories) ,
+                Users = _userService.GetAllSelcted(users),
 
                 SelectedCategoryIds = _context.CategoryTasks
                     .Where(ct => ct.TaskId == task.Id)
@@ -331,50 +226,12 @@ namespace TaskProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(TaskViewModel vm)
         {
-            var task = (await _context.Tasks
-.FromSqlInterpolated($"EXEC dbo.TaskDetail {vm.Id}")
-.ToListAsync())
-.SingleOrDefault();
+            var task = await _taskService.GetTask(vm.Id);
 
             if (task == null)
                 return NotFound();
 
-            task.Title = vm.Title;
-            task.Description = vm.Description;
-            task.DueDate = vm.DueDate;
-
-            //var old = _context.CategoryTasks
-            //    .Where(x => x.TaskId == task.Id);
-            await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteCategoryByTaskIDTask {task.Id}");
-            await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteUserByTaskIDTask {task.Id}");
-
-            //_context.CategoryTasks.RemoveRange(old);
-
-            foreach (var id in vm.SelectedCategoryIds)
-            {
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.InsertCategoryTask {id}, {task.Id}");
-                //_context.CategoryTasks.Add(new CategoryTask
-                //{
-                //    TaskId = task.Id,
-                //    CategoryId = id
-                //});
-            }
-            foreach (var id in vm.SelectedUserIds)
-            {
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.InsertTaskUser {id}, {task.Id}");
-                //_context.CategoryTasks.Add(new CategoryTask
-                //{
-                //    TaskId = task.Id,
-                //    CategoryId = id
-                //});
-            }
-            await _context.Database.ExecuteSqlInterpolatedAsync(
-                      $"EXEC dbo.UpdateTask {task.Title}, {task.Description}, {task.DueDate}, {task.Id}");
-            //await _context.SaveChangesAsync();
+            await _taskService.UpdateTask(vm.Id, vm);
 
             return RedirectToAction(nameof(Index));
         }
@@ -386,10 +243,7 @@ namespace TaskProject.Controllers
             if (id == null)
                 return NotFound();
 
-            var task = (await _context.Tasks
-.FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
-.ToListAsync())
-.SingleOrDefault();
+            var task = await _taskService.GetTask(id);
 
             if (task == null)
                 return NotFound();
@@ -403,18 +257,12 @@ namespace TaskProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangeStatus(Models.Task data)
         {
-            var task = (await _context.Tasks
-.FromSqlInterpolated($"EXEC dbo.TaskDetail {data.Id}")
-.ToListAsync())
-.SingleOrDefault();
+            var task = await _taskService.GetTask(data.Id);
 
             if (task == null)
                 return NotFound();
 
-            task.Status = data.Status;
-
-            await _context.Database.ExecuteSqlInterpolatedAsync(
-                       $"EXEC dbo.ChangeTaskStatus {data.Status}, {task.Id}");
+            await _taskService.ChangeStatusTask(data.Id, data.Status);
 
             return RedirectToAction(nameof(Index));
         }
@@ -427,10 +275,7 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var task = (await _context.Tasks
- .FromSqlInterpolated($"EXEC dbo.TaskDetail {id}")
- .ToListAsync())
- .SingleOrDefault();
+            var task = await _taskService.GetTask(id);
             if (task == null)
             {
                 return NotFound();
@@ -444,21 +289,20 @@ namespace TaskProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
+            var task = await _taskService.GetTask(id);
             if (task != null)
             {
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                         $"EXEC dbo.DeleteTask {id}");
-                //_context.Tasks.Remove(task);
+                await _taskService.DeleteTask(id);
             }
-
-            //await _context.SaveChangesAsync();
             return RedirectToAction(nameof(Index));
         }
 
-        private bool TaskExists(int id)
+        private async Task<bool> TaskExists(int id)
         {
-            return _context.Tasks.Any(e => e.Id == id);
+            var data = await _taskService.GetTask(id);
+            if (data == null)
+                return false;
+            return true;
         }
     }
 }
