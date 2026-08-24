@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using TaskProject.Models;
 using TaskProject.ViewModels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace TaskProject.Controllers
 {
@@ -16,13 +17,11 @@ namespace TaskProject.Controllers
             _context = context;
         }
 
-        // GET: Tasks
-        public async Task<IActionResult> Index(TasksStatus? status)
+        [NonAction]
+        public async Task<List<TaskViewModel>> GetAll()
         {
-            ViewData["status"] = status;
-
             var data = await _context.TaskDetailsDto
-                .FromSqlInterpolated($"EXEC dbo.SelectTasksWithDetails {status}")
+                .FromSqlInterpolated($"EXEC dbo.SelectTasksWithDetails")
                 .ToListAsync();
 
             var vmList = data
@@ -64,11 +63,100 @@ namespace TaskProject.Controllers
      })
      .ToList();
 
-            if (status != null)
+            return vmList;
+        }
+        public async Task<IActionResult> Index(TaskFilterViewModel tfv)
+        {
+            var dataList = await GetAll();
+
+            // Filter - Title
+            if (!string.IsNullOrWhiteSpace(tfv.Title))
             {
-                vmList = vmList.Where(x => x.Status == status).ToList();
+                dataList = dataList
+                    .Where(x => x.Title != null &&
+                                x.Title.Contains(tfv.Title,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
             }
-            return View(vmList);
+
+            // Filter - Status
+            if (tfv.Status.HasValue)
+            {
+                dataList = dataList
+                    .Where(x => x.Status == tfv.Status.Value)
+                    .ToList();
+            }
+
+            // Filter - DueDate
+            if (tfv.DueDate.HasValue)
+            {
+                if (tfv.DueDateSearchType == 1)
+                {
+                    dataList = dataList
+                        .Where(x => x.DueDate == tfv.DueDate)
+                        .ToList();
+                }
+                else if (tfv.DueDateSearchType == 2)
+                {
+                    dataList = dataList
+                        .Where(x => x.DueDate >= tfv.DueDate)
+                        .ToList();
+                }
+                else if (tfv.DueDateSearchType == 3)
+                {
+                    dataList = dataList
+                        .Where(x => x.DueDate <= tfv.DueDate)
+                        .ToList();
+                }
+            }
+
+            // Sort
+            dataList = SortList(dataList, tfv);
+
+            // Pagination
+            dataList = dataList
+                .Skip(tfv.Page * tfv.ItemCount)
+                .Take(tfv.ItemCount)
+                .ToList();
+
+            // Total pages
+            tfv.TotalPages = (int)Math.Ceiling(
+                dataList.Count / (double)tfv.ItemCount
+            );
+
+            ViewBag.Filter = tfv;
+
+            return View(dataList);
+        }
+        [NonAction]
+        public List<TaskViewModel> SortList(
+    List<TaskViewModel> list,
+    TaskFilterViewModel filter)
+        {
+            return filter.SortColumn switch
+            {
+                "Title" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Title).ToList()
+                    : list.OrderBy(x => x.Title).ToList(),
+
+                "Description" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Description).ToList()
+                    : list.OrderBy(x => x.Description).ToList(),
+
+                "DueDate" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.DueDate).ToList()
+                    : list.OrderBy(x => x.DueDate).ToList(),
+
+                "Status" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Status).ToList()
+                    : list.OrderBy(x => x.Status).ToList(),
+
+                "Id" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Id).ToList()
+                    : list.OrderBy(x => x.Id).ToList(),
+
+                _ => list.OrderBy(x => x.Id).ToList()
+            };
         }
 
         // GET: Tasks/Details/5

@@ -1,94 +1,387 @@
-﻿@using TaskProject;
+﻿@using TaskProject
 @model IEnumerable<TaskProject.ViewModels.TaskViewModel>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Tasks";
+
+    var filter = ViewBag.Filter as TaskProject.ViewModels.TaskFilterViewModel;
 }
 
-<h1>Index</h1>
+<h1>Tasks</h1>
+
 <form asp-action="Index" method="get">
 
-    <select name="status" class="form-select">
-        <option value="">همه وضعیت‌ها</option>
+    <div class="row mb-3">
 
-        @foreach (TasksStatus item in Enum.GetValues(typeof(TasksStatus)))
-        {
-            <option value="@item" selected="@(ViewData["status"]?.ToString() == item.ToString())">
-                @item.GetDisplayName()
-            </option>
-        }
+        <!-- Title -->
+        <div class="col-md-3">
+            <label class="form-label">عنوان</label>
 
-    </select>
+            <input type="text"
+                   name="Title"
+                   value="@filter?.Title"
+                   class="form-control"
+                   placeholder="جستجوی عنوان..." />
+        </div>
 
-    <button type="submit" class="btn btn-primary">
+        <!-- Status -->
+        <div class="col-md-3">
+            <label class="form-label">وضعیت</label>
+
+            <select name="Status" class="form-select">
+
+                <option value="">همه وضعیت‌ها</option>
+
+                @foreach (TasksStatus item in Enum.GetValues(typeof(TasksStatus)))
+                {
+                    <option value="@((int)item)" selected="@(filter?.Status == item)">
+                        @item.GetDisplayName()
+                    </option>
+                }
+
+            </select>
+        </div>
+
+    </div>
+
+
+    <div class="row mb-3">
+
+        <!-- DueDate -->
+        <div class="col-md-3">
+
+            <label class="form-label">تاریخ سررسید</label>
+
+            <input type="date"
+                   name="DueDate"
+                   value="@(filter?.DueDate?.ToString("yyyy-MM-dd"))"
+                   class="form-control" />
+
+        </div>
+
+
+        <!-- DueDate Search Type -->
+        <div class="col-md-3">
+
+            <label class="form-label">نوع جستجوی تاریخ</label>
+
+            <select name="DueDateSearchType"
+                    class="form-select">
+
+                <option value="1"
+                        selected="@(filter?.DueDateSearchType == 1)">
+                    مساوی
+                </option>
+
+                <option value="2"
+                        selected="@(filter?.DueDateSearchType == 2)">
+                    بزرگتر یا مساوی
+                </option>
+
+                <option value="3"
+                        selected="@(filter?.DueDateSearchType == 3)">
+                    کوچکتر یا مساوی
+                </option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+
+    <!-- Search Button -->
+
+    <button type="submit"
+            class="btn btn-primary">
+
         جستجو
+
     </button>
 
+    <a asp-action="Index"
+       class="btn btn-secondary">
+
+        حذف فیلترها
+
+    </a>
+
 </form>
+
+
+<hr />
+
+
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create">
+
+       Create New
+
+    </a>
 </p>
-<table class="table">
+
+
+<table class="table table-bordered table-striped">
+
     <thead>
+
         <tr>
+
+            <!-- Title -->
+
             <th>
-                @Html.DisplayNameFor(model => model.Title)
+
+                <a asp-action="Index"
+                   asp-route-Title="@filter?.Title"
+                   asp-route-Status="@filter?.Status"
+                   asp-route-DueDate="@filter?.DueDate"
+                   asp-route-DueDateSearchType="@filter?.DueDateSearchType"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="Title"
+                   asp-route-SortDescending="@(filter?.SortColumn == "Title" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.Title)
+
+                    @if (filter?.SortColumn == "Title")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
+
             </th>
+
+
+            <!-- Description -->
+
             <th>
-                @Html.DisplayNameFor(model => model.Description)
+
+                <a asp-action="Index"
+                   asp-route-Title="@filter?.Title"
+                   asp-route-Status="@filter?.Status"
+                   asp-route-DueDate="@filter?.DueDate"
+                   asp-route-DueDateSearchType="@filter?.DueDateSearchType"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="Description"
+                   asp-route-SortDescending="@(filter?.SortColumn == "Description" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.Description)
+
+                    @if (filter?.SortColumn == "Description")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
+
             </th>
+
+
+            <!-- DueDate -->
+
             <th>
-                @Html.DisplayNameFor(model => model.DueDate)
+
+                <a asp-action="Index"
+                   asp-route-Title="@filter?.Title"
+                   asp-route-Status="@filter?.Status"
+                   asp-route-DueDate="@filter?.DueDate"
+                   asp-route-DueDateSearchType="@filter?.DueDateSearchType"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="DueDate"
+                   asp-route-SortDescending="@(filter?.SortColumn == "DueDate" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.DueDate)
+
+                    @if (filter?.SortColumn == "DueDate")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
+
             </th>
+
+
+            <!-- Status -->
+
             <th>
-                @Html.DisplayNameFor(model => model.Status)
+
+                <a asp-action="Index"
+                   asp-route-Title="@filter?.Title"
+                   asp-route-Status="@filter?.Status"
+                   asp-route-DueDate="@filter?.DueDate"
+                   asp-route-DueDateSearchType="@filter?.DueDateSearchType"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="Status"
+                   asp-route-SortDescending="@(filter?.SortColumn == "Status" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.Status)
+
+                    @if (filter?.SortColumn == "Status")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
+
             </th>
+
+
+            <!-- Categories -->
+
             <th>
+
                 @Html.DisplayNameFor(model => model.Categories)
+
             </th>
+
+
+            <!-- Users -->
+
             <th>
+
                 @Html.DisplayNameFor(model => model.Users)
+
             </th>
-            <th></th>
+
+
+            <th>
+                عملیات
+            </th>
+
         </tr>
+
     </thead>
+
+
     <tbody>
+
         @foreach (var item in Model)
         {
+
             <tr>
+
                 <td>
                     @Html.DisplayFor(modelItem => item.Title)
                 </td>
+
+
                 <td>
                     @Html.DisplayFor(modelItem => item.Description)
                 </td>
+
+
                 <td>
                     @Html.DisplayFor(modelItem => item.DueDate)
                 </td>
+
+
                 <td>
                     @Html.DisplayFor(modelItem => item.Status)
                 </td>
+
+
                 <td>
+
+                    <ul>
+
                     @foreach (var category in item.Categories)
                     {
+                         <li>
                         @category.Text
-                        <br />
+                        </li>
                     }
+                    </ul>
                 </td>
+
+
                 <td>
+
+                    <ul>
+                       
                     @foreach (var user in item.Users)
                     {
-                        @user.Text
-                        <br />
+                            <li>
+                        @user.Text 
+                    </li>
                     }
+                        </ul>
                 </td>
+
+
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                    <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                    <a asp-action="ChangeStatus" asp-route-id="@item.Id">Change Status</a> |
-                    <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+
+                    <a asp-action="Edit"
+                       asp-route-id="@item.Id">
+
+                        Edit
+
+                    </a>
+
+                    |
+
+                    <a asp-action="Details"
+                       asp-route-id="@item.Id">
+
+                        Details
+
+                    </a>
+
+                    |
+
+                    <a asp-action="ChangeStatus"
+                       asp-route-id="@item.Id">
+
+                        Change Status
+
+                    </a>
+
+                    |
+
+                    <a asp-action="Delete"
+                       asp-route-id="@item.Id">
+
+                        Delete
+
+                    </a>
+
                 </td>
+
             </tr>
+
         }
+
     </tbody>
+
 </table>
+
+    <nav>
+
+        <ul class="pagination">
+
+            @for (int i = 0; i < filter?.TotalPages + 1; i++)
+            {
+
+                <li class="page-item @(i == filter?.Page ? "active" : "")">
+
+                    <a class="page-link"
+                       asp-action="Index"
+                       asp-route-Page="@i"
+                       asp-route-Title="@filter?.Title"
+                       asp-route-Status="@filter?.Status"
+                       asp-route-DueDate="@filter?.DueDate"
+                       asp-route-DueDateSearchType="@filter?.DueDateSearchType"
+                       asp-route-SortColumn="@filter?.SortColumn"
+                       asp-route-SortDescending="@filter?.SortDescending">
+
+                        @(i + 1)
+
+                    </a>
+
+                </li>
+
+            }
+
+        </ul>
+
+    </nav>
