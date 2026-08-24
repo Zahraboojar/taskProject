@@ -21,7 +21,7 @@ namespace TaskProject.Services
         public Task<int> DeleteCategoryTaskByTaskId(int taskId)
         {
             return _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteCategoryTaskByTaskIDTask {taskId}");
+                        $"EXEC dbo.DeleteCategoryTaskByTaskID {taskId}");
         }
 
         public Task<int> InsertCategoryTask(int taskId, int categoryId)
