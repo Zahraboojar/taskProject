@@ -24,9 +24,9 @@ namespace TaskProject.Services
         public async Task<int> DeleteTask(int id)
         {
             await _context.Database.ExecuteSqlInterpolatedAsync(
-                       $"EXEC dbo.DeleteCategoryTaskByTaskID {id}");
+                       $"EXEC dbo.DeleteCategoryByTaskIDTask {id}");
             await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteTaskUserByTaskID {id}");
+                        $"EXEC dbo.DeleteUserByTaskIDTask {id}");
             return await _context.Database.ExecuteSqlInterpolatedAsync(
                          $"EXEC dbo.DeleteTask {id}");
 
@@ -151,9 +151,9 @@ namespace TaskProject.Services
         public async System.Threading.Tasks.Task UpdateTask(int id, TaskViewModel vm)
         {
             await _context.Database.ExecuteSqlInterpolatedAsync(
-                         $"EXEC dbo.DeleteCategoryTaskByTaskID {id}");
+                         $"EXEC dbo.DeleteCategoryByTaskIDTask {id}");
             await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteTaskUserByTaskID {id}");
+                        $"EXEC dbo.DeleteUserByTaskIDTask {id}");
 
             foreach (var cId in vm.SelectedCategoryIds)
             {

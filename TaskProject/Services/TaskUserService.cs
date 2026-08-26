@@ -16,13 +16,13 @@ namespace TaskProject.Services
         public Task<int> DeleteTaskUserByTaskId(int taskId)
         {
             return _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteTaskUserByTaskID {taskId}");
+                        $"EXEC dbo.DeleteUserByTaskIDTask {taskId}");
         }
 
         public Task<int> DeleteTaskUserByUserId(int userId)
         {
             return _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteTaskUserByUserID {userId}");
+                        $"EXEC dbo.DeleteUserByUserIDTask {userId}");
         }
 
         public Task<int> InsertTaskUser(int taskId, int userId)

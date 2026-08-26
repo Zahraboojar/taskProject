@@ -15,13 +15,13 @@ namespace TaskProject.Services
         public async Task<int> DeleteCategoryTaskByCategoryId(int categoryId)
         {
             return await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteCategoryTaskByCategoryID {categoryId}");
+                        $"EXEC dbo.DeleteCategoryByCategoryIDTask {categoryId}");
         }
 
         public async Task<int> DeleteCategoryTaskByTaskId(int taskId)
         {
             return await _context.Database.ExecuteSqlInterpolatedAsync(
-                        $"EXEC dbo.DeleteCategoryTaskByTaskID {taskId}");
+                        $"EXEC dbo.DeleteCategoryByTaskIDTask {taskId}");
         }
 
         public async Task<int> InsertCategoryTask(int taskId, int categoryId)
