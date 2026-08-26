@@ -7,5 +7,6 @@ namespace TaskProject.Services
         public Task<int> InsertCategoryTask(int taskId, int categoryId);
         public Task<int> DeleteCategoryTaskByTaskId(int taskId);
         public Task<int> DeleteCategoryTaskByCategoryId(int categoryId);
+        public Task<int> CountCategoryTask(int? categoryId);
     }
 }

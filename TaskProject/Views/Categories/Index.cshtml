@@ -2,8 +2,44 @@
 
 @{
     ViewData["Title"] = "Index";
+    var filter = ViewBag.Filter as TaskProject.ViewModels.CategoryFilterViewModel;
 }
+<form asp-action="Index" method="get">
 
+    <div class="row mb-3">
+
+        <!-- Title -->
+        <div class="col-md-3">
+            <label class="form-label"> عنوان  :</label>
+
+            <input type="text"
+                   name="Title"
+                   value="@filter?.Title"
+                   class="form-control"
+                   placeholder="جستجوی عنوان ..." />
+        </div>
+
+    </div>
+
+
+    <!-- Search Button -->
+
+    <button type="submit"
+            class="btn btn-primary">
+
+        جستجو
+
+    </button>
+
+    <a asp-action="Index"
+       class="btn btn-secondary">
+
+        حذف فیلترها
+
+    </a>
+
+</form>
+</hr>
 <h1>Index</h1>
 
 <p>
@@ -13,10 +49,36 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.Title)
+                <a asp-action="Index"
+                   asp-route-Title="@filter?.Title"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="Title"
+                   asp-route-SortDescending="@(filter?.SortColumn == "Title" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.Title)
+
+                    @if (filter?.SortColumn == "Title")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Description)
+                <a asp-action="Index"
+                   asp-route-Title="@filter?.Title"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="Description"
+                   asp-route-SortDescending="@(filter?.SortColumn == "Description" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.Description)
+
+                    @if (filter?.SortColumn == "Description")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
             </th>
             <th></th>
         </tr>
@@ -39,3 +101,31 @@
 }
     </tbody>
 </table>
+
+<nav>
+
+    <ul class="pagination">
+
+        @for (int i = 0; i < filter?.TotalPages; i++)
+        {
+
+            <li class="page-item @(i == filter?.Page ? "active" : "")">
+
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-Title="@filter?.Title"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="@filter?.SortColumn"
+                   asp-route-SortDescending="@filter?.SortDescending">
+
+                    @(i + 1)
+
+                </a>
+
+            </li>
+
+        }
+
+    </ul>
+
+</nav>

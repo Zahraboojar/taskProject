@@ -1,33 +1,85 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using TaskProject.Models;
+using TaskProject.Services;
+using TaskProject.ViewModels;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace TaskProject.Controllers
 {
     public class CategoriesController : Controller
     {
         private readonly TaskDbContext _context;
+        private readonly ICategoryService _categoryService;
+        private readonly ICategoryTaskService _categoryTaskService;
 
-        public CategoriesController(TaskDbContext context)
+        public CategoriesController(TaskDbContext context, ICategoryService categoryService, ICategoryTaskService categoryTaskService)
         {
             _context = context;
+            _categoryService = categoryService;
+            _categoryTaskService = categoryTaskService;
+
         }
 
         // GET: Categories
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(CategoryFilterViewModel cfv)
         {
-            var categories = await _context.Categories
-                .FromSqlInterpolated($"EXEC dbo.SelectCategories")
-                .ToListAsync();
+            var categories = await _categoryService.GetAll();
+
+            if (!string.IsNullOrWhiteSpace(cfv.Title))
+            {
+                categories = categories
+                    .Where(x => x.Title != null &&
+                                x.Title.Contains(cfv.Title,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            // Sort
+            categories = SortList(categories, cfv);
+
+            // Pagination
+            categories = categories 
+                .Skip(cfv.Page * cfv.ItemCount)
+                .Take(cfv.ItemCount)
+                .ToList();
+
+            // Total pages
+            cfv.TotalPages = (int)Math.Ceiling(
+                categories.Count / (double)cfv.ItemCount
+            );
+
+            ViewBag.Filter = cfv;
 
             return View(categories);
         }
 
+        public List<Category> SortList(
+   List<Category> list,
+   CategoryFilterViewModel filter)
+        {
+            return filter.SortColumn switch
+            {
+                "Title" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Title).ToList()
+                    : list.OrderBy(x => x.Title).ToList(),
+
+                "Description" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Description).ToList()
+                    : list.OrderBy(x => x.Description).ToList(),
+
+                "Id" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Id).ToList()
+                    : list.OrderBy(x => x.Id).ToList(),
+
+                _ => list.OrderBy(x => x.Id).ToList()
+            };
+        }
         // GET: Categories/Details/5
         public async Task<IActionResult> Details(int? id)
         {
@@ -36,10 +88,7 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var category = (await _context.Categories
-    .FromSqlInterpolated($"EXEC dbo.CategoryDetail {id}")
-    .ToListAsync())
-    .SingleOrDefault();
+            var category = await _categoryService.GetCategory(id);
             if (category == null)
             {
                 return NotFound();
@@ -63,8 +112,7 @@ namespace TaskProject.Controllers
         {
             if (ModelState.IsValid)
             {
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                     $"EXEC dbo.InsertCategory {category.Title}, {category.Description}");
+                await _categoryService.InsertCategory(category);
                 //_context.Add(category);
                 //await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -80,10 +128,7 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var category = (await _context.Categories
-    .FromSqlInterpolated($"EXEC dbo.CategoryDetail {id}")
-    .ToListAsync())
-    .SingleOrDefault();
+            var category = await _categoryService.GetCategory(id);
             if (category == null)
             {
                 return NotFound();
@@ -107,8 +152,7 @@ namespace TaskProject.Controllers
             {
                 try
                 {
-                    await _context.Database.ExecuteSqlInterpolatedAsync(
-                         $"EXEC dbo.UpdateCategory {category.Title}, {category.Description}, {id}");
+                    await _categoryService.UpdateCategory(id, category);
                     //_context.Update(category);
                     //await _context.SaveChangesAsync();
                 }
@@ -136,18 +180,13 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var category = (await _context.Categories
-    .FromSqlInterpolated($"EXEC dbo.CategoryDetail {id}")
-    .ToListAsync())
-    .SingleOrDefault();
+            var category = await _categoryService.GetCategory(id);
             if (category == null)
             {
                 return NotFound();
             }
 
-            var count = (await _context.Categories
-    .FromSqlInterpolated($"EXEC dbo.SelectCategoryTask {id}")
-    .ToListAsync()).Count;
+            var count = await _categoryTaskService.CountCategoryTask(id);
 
             ViewData["IsShowConfirmAlert"] = false;
             if (count > 0)
@@ -165,8 +204,8 @@ namespace TaskProject.Controllers
             var category = await _context.Categories.FindAsync(id);
             if (category != null)
             {
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                         $"EXEC dbo.DeleteCategory {id}");
+                await _categoryService.DeleteCategory(id);
+                await _categoryTaskService.DeleteCategoryTaskByCategoryId(id);
                 //_context.Categories.Remove(category);
             }
 

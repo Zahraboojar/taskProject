@@ -12,9 +12,10 @@ namespace TaskProject.Services
         {
             _context = context;
         }
-        public Task<int> DeleteCategory(int id)
+        public async Task<int> DeleteCategory(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Database.ExecuteSqlInterpolatedAsync(
+                         $"EXEC dbo.DeleteCategory {id}");
         }
 
         public async Task<List<Category>> GetAll()
@@ -33,19 +34,24 @@ namespace TaskProject.Services
             }).ToList();
         }
 
-        public Task<Category> GetCategory(int? id)
+        public async Task<Category> GetCategory(int? id)
         {
-            throw new NotImplementedException();
+            return (await _context.Categories
+    .FromSqlInterpolated($"EXEC dbo.CategoryDetail {id}")
+    .ToListAsync())
+    .SingleOrDefault();
         }
 
-        public Task<int> InsertCategory(Category category)
+        public async Task<int> InsertCategory(Category category)
         {
-            throw new NotImplementedException();
+            return await _context.Database.ExecuteSqlInterpolatedAsync(
+                      $"EXEC dbo.InsertCategory {category.Title}, {category.Description}");
         }
 
-        public Task<int> UpdateCategory(int id, Category category)
+        public async Task<int> UpdateCategory(int id, Category category)
         {
-            throw new NotImplementedException();
+           return await _context.Database.ExecuteSqlInterpolatedAsync(
+                         $"EXEC dbo.UpdateCategory {category.Title}, {category.Description}, {id}");
         }
     }
 }

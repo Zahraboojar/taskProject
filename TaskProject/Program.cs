@@ -2,15 +2,24 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using TaskProject.Models;
+using TaskProject.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 builder.Services.AddDbContext<TaskDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<ICategoryTaskService, CategoryTaskService>();
+builder.Services.AddScoped<ITaskUserService, TaskUserService>();
+
 
 var app = builder.Build();
 

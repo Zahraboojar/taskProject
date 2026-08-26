@@ -9,6 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using TaskProject.Models;
+using TaskProject.Services;
 using TaskProject.ViewModels;
 
 namespace TaskProject.Controllers
@@ -16,53 +17,115 @@ namespace TaskProject.Controllers
     public class UsersController : Controller
     {
         private readonly TaskDbContext _context;
+        private readonly IUserService _userService;
+        private readonly ITaskUserService _taskUserService;
 
-        public UsersController(TaskDbContext context)
+        public UsersController(TaskDbContext context, IUserService userService, ITaskUserService taskUserService)
         {
             _context = context;
+            _userService = userService;
+            _taskUserService = taskUserService;
         }
 
         // GET: Users
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(UserFilterViewModel ufv)
         {
             //return View(await _context.Users.ToListAsync());
-            var data = await _context.UserWithTaskListDto
-                .FromSqlInterpolated($"EXEC dbo.SelectUsersWithTaskList")
-                .ToListAsync();
+            var data = await _userService.GetAllWithTasks();
 
-            var vmList = data
-     .GroupBy(x => new
-     {
-         x.Id,
-         x.PhoneNumber,
-         x.FullName,
-         x.Username,
-         x.Email,
-         x.NationalCode,
-     })
-     .Select(g => new UserViewModel
-     {
-         Id = g.Key.Id,
-         FullName = g.Key.FullName,
-         PhoneNumber = g.Key.PhoneNumber,
-         Email = g.Key.Email,
-         Username = g.Key.Username,
-         NationalCode = g.Key.NationalCode,
+            
+            if (!string.IsNullOrWhiteSpace(ufv.FullName))
+            {
+                data = data
+                    .Where(x => x.FullName != null &&
+                                x.FullName.Contains(ufv.FullName,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            if (!string.IsNullOrWhiteSpace(ufv.Email))
+            {
+                data = data
+                    .Where(x => x.Email != null &&
+                                x.Email.Contains(ufv.Email,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            if (!string.IsNullOrWhiteSpace(ufv.PhoneNumber))
+            {
+                data = data
+                    .Where(x => x.PhoneNumber != null &&
+                                x.PhoneNumber.Contains(ufv.PhoneNumber,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            if (!string.IsNullOrWhiteSpace(ufv.NationalCode))
+            {
+                data = data
+                    .Where(x => x.NationalCode != null &&
+                                x.NationalCode.Contains(ufv.NationalCode,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+            if (!string.IsNullOrWhiteSpace(ufv.Username))
+            {
+                data = data
+                    .Where(x => x.Username != null &&
+                                x.Username.Contains(ufv.Username,
+                                    StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
 
-         Tasks = g
-             .Where(x => x.TaskId != null)
-             .GroupBy(x => x.TaskId)
-             .Select(x => new SelectListItem
-             {
-                 Value = x.Key!.Value.ToString(),
-                 Text = x.First().TaskTitle!
-             })
-             .ToList(),
+            // Sort
+            data = SortList(data, ufv);
 
-     })
-     .ToList();
+            // Pagination
+            data = data
+                .Skip(ufv.Page * ufv.ItemCount)
+                .Take(ufv.ItemCount)
+                .ToList();
 
-            return View(vmList);
+            // Total pages
+            ufv.TotalPages = (int)Math.Ceiling(
+                data.Count / (double)ufv.ItemCount
+            );
+
+            ViewBag.Filter = ufv;
+
+            return View(data);
+        }
+
+        [NonAction]
+        public List<UserViewModel> SortList(
+   List<UserViewModel> list,
+   UserFilterViewModel filter)
+        {
+            return filter.SortColumn switch
+            {
+                "FullName" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.FullName).ToList()
+                    : list.OrderBy(x => x.FullName).ToList(),
+
+                "Username" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Username).ToList()
+                    : list.OrderBy(x => x.Username).ToList(),
+
+                "NationalCode" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.NationalCode).ToList()
+                    : list.OrderBy(x => x.NationalCode).ToList(),
+
+                "Email" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Email).ToList()
+                    : list.OrderBy(x => x.Email).ToList(),
+                "PhoneNumber" => filter.SortDescending
+               ? list.OrderByDescending(x => x.PhoneNumber).ToList()
+               : list.OrderBy(x => x.PhoneNumber).ToList(),
+
+                "Id" => filter.SortDescending
+                    ? list.OrderByDescending(x => x.Id).ToList()
+                    : list.OrderBy(x => x.Id).ToList(),
+
+                _ => list.OrderBy(x => x.Id).ToList()
+            };
         }
 
         // GET: Users/Details/5
@@ -73,9 +136,7 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var user = (await _context.Users
-                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
-                .SingleOrDefault();
+            var user = await _userService.GetUser(id);
             if (user == null)
             {
                 return NotFound();
@@ -103,9 +164,10 @@ namespace TaskProject.Controllers
                 {
                     if (!await UserExists(user.Username))
                     {
-                        var finalPass = GetMd5Hash(user.PasswordHash);
-                        await _context.Database.ExecuteSqlInterpolatedAsync(
-                              $"EXEC dbo.InsertUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {finalPass}");
+                         user.PasswordHash = GetMd5Hash(user.PasswordHash);
+
+                        await _userService.InsertUser(user);
+
                         return RedirectToAction(nameof(Index));
                     }
                     else
@@ -135,9 +197,7 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var user = (await _context.Users
-                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
-                .SingleOrDefault();
+            var user = await _userService.GetUser(id);
             if (user == null)
             {
                 return NotFound();
@@ -156,9 +216,7 @@ namespace TaskProject.Controllers
             {
                 return NotFound();
             }
-            var oldUser = (await _context.Users
-                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
-                .SingleOrDefault();
+            var oldUser = await _userService.GetUser(id);
 
             if (ModelState.IsValid)
             {
@@ -166,9 +224,8 @@ namespace TaskProject.Controllers
                 {
                     if (!await UserExists(user.Username) || user.Username == oldUser?.Username)
                     {
-                        var finalPass = GetMd5Hash(user.PasswordHash);
-                        await _context.Database.ExecuteSqlInterpolatedAsync(
-                          $"EXEC dbo.UpdateUser {user.Username}, {user.FullName}, {user.NationalCode}, {user.Email}, {user.PhoneNumber}, {finalPass}, {user.Id}");
+                        user.PasswordHash = GetMd5Hash(user.PasswordHash);
+                        await _userService.UpdateUser(id, user);
                         return RedirectToAction(nameof(Index));
                     } else
                     {
@@ -201,9 +258,7 @@ namespace TaskProject.Controllers
                 return NotFound();
             }
 
-            var user = (await _context.Users
-                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
-                .SingleOrDefault();
+            var user = await _userService.GetUser(id);
             if (user == null)
             {
                 return NotFound();
@@ -217,15 +272,11 @@ namespace TaskProject.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var user = (await _context.Users
-                .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}").ToListAsync())
-                .SingleOrDefault();
+            var user = await _userService.GetUser(id);
             if (user != null)
             {
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                      $"EXEC dbo.DeleteUser {id}");
-                await _context.Database.ExecuteSqlInterpolatedAsync(
-                     $"EXEC dbo.DeleteTaskUserByUserID {id}");
+                await _userService.DeleteUser(id);
+                await _taskUserService.DeleteTaskUserByUserId(id);
             }
 
             return RedirectToAction(nameof(Index));
@@ -233,20 +284,14 @@ namespace TaskProject.Controllers
 
         private async Task<bool> UserExists(int id)
         {
-            var user = (await _context.Users
-               .FromSqlInterpolated($"EXEC dbo.SelectUserWithId {id}")
-               .ToListAsync())
-                .SingleOrDefault();
+            var user = await _userService.GetUser(id);
             if (user == null)
                 return false;
             return true;
         }
         private async Task<bool> UserExists(string username)
         {
-            var user = (await _context.Users
-               .FromSqlInterpolated($"EXEC dbo.SelectUserWithUsername {username}")
-               .ToListAsync())
-                .SingleOrDefault();
+            var user = await _userService.GetUser(username);
             if (user == null)
                 return false;
             return true;

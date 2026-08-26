@@ -2,9 +2,87 @@
 
 @{
     ViewData["Title"] = "Index";
+    var filter = ViewBag.Filter as TaskProject.ViewModels.UserFilterViewModel;
 }
 
 <h1>Index</h1>
+<form asp-action="Index" method="get">
+
+    <div class="row mb-3">
+
+        <!-- Title -->
+        <div class="col-md-3">
+            <label class="form-label">نام و نام خانوادگی :</label>
+
+            <input type="text"
+                   name="FullName"
+                   value="@filter?.FullName"
+                   class="form-control"
+                   placeholder="جستجوی نام و نام خانوادگی..." />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">نام کاربری :</label>
+
+            <input type="text"
+                   name="Username"
+                   value="@filter?.Username"
+                   class="form-control"
+                   placeholder="جستجوی نام کاربری..." />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label"> ایمیل :</label>
+
+            <input type="text"
+                   name="Email"
+                   value="@filter?.Email"
+                   class="form-control"
+                   placeholder="جستجوی ایمیل ..." />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label"> شماره تماس :</label>
+
+            <input type="text"
+                   name="PhoneNumber"
+                   value="@filter?.PhoneNumber"
+                   class="form-control"
+                   placeholder="جستجوی شماره تماس ..." />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label"> کد ملی :</label>
+
+            <input type="text"
+                   name="NationalCode"
+                   value="@filter?.NationalCode"
+                   class="form-control"
+                   placeholder="جستجوی کد ملی  ..." />
+        </div>
+
+    </div>
+
+
+    <!-- Search Button -->
+
+    <button type="submit"
+            class="btn btn-primary">
+
+        جستجو
+
+    </button>
+
+    <a asp-action="Index"
+       class="btn btn-secondary">
+
+        حذف فیلترها
+
+    </a>
+
+</form>
+
+
+<hr />
 
 <p>
     <a asp-action="Create">Create New</a>
@@ -13,19 +91,104 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.FullName)
+                <a asp-action="Index"
+                   asp-route-FullName="@filter?.FullName"
+                   asp-route-NationalCode="@filter?.NationalCode"
+                   asp-route-PhoneNumber="@filter?.PhoneNumber"
+                   asp-route-Email="@filter?.Email"
+                   asp-route-Email="@filter?.Username"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="FullName"
+                   asp-route-SortDescending="@(filter?.SortColumn == "FullName" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.FullName)
+
+                    @if (filter?.SortColumn == "FullName")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.NationalCode)
+                <a asp-action="Index"
+                   asp-route-FullName="@filter?.FullName"
+                   asp-route-NationalCode="@filter?.NationalCode"
+                   asp-route-PhoneNumber="@filter?.PhoneNumber"
+                   asp-route-Email="@filter?.Email"
+                   asp-route-Email="@filter?.Username"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="NationalCode"
+                   asp-route-SortDescending="@(filter?.SortColumn == "NationalCode" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.NationalCode)
+
+                    @if (filter?.SortColumn == "NationalCode")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.PhoneNumber)
+                <a asp-action="Index"
+                   asp-route-FullName="@filter?.FullName"
+                   asp-route-NationalCode="@filter?.NationalCode"
+                   asp-route-PhoneNumber="@filter?.PhoneNumber"
+                   asp-route-Email="@filter?.Email"
+                   asp-route-Email="@filter?.Username"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="PhoneNumber"
+                   asp-route-SortDescending="@(filter?.SortColumn == "PhoneNumber" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.PhoneNumber)
+
+                    @if (filter?.SortColumn == "PhoneNumber")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Email)
+                <a asp-action="Index"
+                   asp-route-FullName="@filter?.FullName"
+                   asp-route-NationalCode="@filter?.NationalCode"
+                   asp-route-PhoneNumber="@filter?.PhoneNumber"
+                   asp-route-Email="@filter?.Email"
+                   asp-route-Email="@filter?.Username"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="Email"
+                   asp-route-SortDescending="@(filter?.SortColumn == "Email" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.Email)
+
+                    @if (filter?.SortColumn == "Email")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Username)
+                <a asp-action="Index"
+                   asp-route-FullName="@filter?.FullName"
+                   asp-route-NationalCode="@filter?.NationalCode"
+                   asp-route-PhoneNumber="@filter?.PhoneNumber"
+                   asp-route-Email="@filter?.Email"
+                   asp-route-Email="@filter?.Username"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="Username"
+                   asp-route-SortDescending="@(filter?.SortColumn == "Username" ? !filter.SortDescending : false)">
+
+                    @Html.DisplayNameFor(model => model.Username)
+
+                    @if (filter?.SortColumn == "Username")
+                    {
+                        @(filter.SortDescending ? " ↓" : " ↑")
+                    }
+
+                </a>
             </th>
             <th>
                 @Html.DisplayNameFor(model => model.Tasks)
@@ -67,3 +230,35 @@
 }
     </tbody>
 </table>
+
+<nav>
+
+    <ul class="pagination">
+
+        @for (int i = 0; i < filter?.TotalPages; i++)
+        {
+
+            <li class="page-item @(i == filter?.Page ? "active" : "")">
+
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-FullName="@filter?.FullName"
+                   asp-route-NationalCode="@filter?.NationalCode"
+                   asp-route-PhoneNumber="@filter?.PhoneNumber"
+                   asp-route-Email="@filter?.Email"
+                   asp-route-Email="@filter?.Username"
+                   asp-route-Page="0"
+                   asp-route-SortColumn="@filter?.SortColumn"
+                   asp-route-SortDescending="@filter?.SortDescending">
+
+                    @(i + 1)
+
+                </a>
+
+            </li>
+
+        }
+
+    </ul>
+
+</nav>

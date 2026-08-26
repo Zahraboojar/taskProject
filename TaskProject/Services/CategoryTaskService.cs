@@ -12,22 +12,28 @@ namespace TaskProject.Services
         {
             _context = context;
         }
-        public Task<int> DeleteCategoryTaskByCategoryId(int categoryId)
+        public async Task<int> DeleteCategoryTaskByCategoryId(int categoryId)
         {
-            return _context.Database.ExecuteSqlInterpolatedAsync(
+            return await _context.Database.ExecuteSqlInterpolatedAsync(
                         $"EXEC dbo.DeleteCategoryTaskByCategoryID {categoryId}");
         }
 
-        public Task<int> DeleteCategoryTaskByTaskId(int taskId)
+        public async Task<int> DeleteCategoryTaskByTaskId(int taskId)
         {
-            return _context.Database.ExecuteSqlInterpolatedAsync(
+            return await _context.Database.ExecuteSqlInterpolatedAsync(
                         $"EXEC dbo.DeleteCategoryTaskByTaskID {taskId}");
         }
 
-        public Task<int> InsertCategoryTask(int taskId, int categoryId)
+        public async Task<int> InsertCategoryTask(int taskId, int categoryId)
         {
-            return _context.Database.ExecuteSqlInterpolatedAsync(
+            return await _context.Database.ExecuteSqlInterpolatedAsync(
                         $"EXEC dbo.InsertCategoryTask {categoryId},{taskId}");
+        }
+        public async Task<int> CountCategoryTask(int? categoryId)
+        {
+            return (await _context.Categories
+    .FromSqlInterpolated($"EXEC dbo.SelectCategoryTask {categoryId}")
+    .ToListAsync()).Count;
         }
     }
 }
