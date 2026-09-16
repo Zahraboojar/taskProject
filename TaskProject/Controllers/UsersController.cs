@@ -78,16 +78,15 @@ namespace TaskProject.Controllers
             // Sort
             data = SortList(data, ufv);
 
+            ufv.TotalPages = (int)Math.Ceiling(
+               data.Count / (double)ufv.ItemCount
+           );
+
             // Pagination
             data = data
-                .Skip(ufv.Page * ufv.ItemCount)
+                .Skip((ufv.Page - 1) * ufv.ItemCount)
                 .Take(ufv.ItemCount)
                 .ToList();
-
-            // Total pages
-            ufv.TotalPages = (int)Math.Ceiling(
-                data.Count / (double)ufv.ItemCount
-            );
 
             ViewBag.Filter = ufv;
 

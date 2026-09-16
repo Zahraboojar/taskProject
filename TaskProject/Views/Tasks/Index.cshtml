@@ -359,12 +359,12 @@
 
         <ul class="pagination">
 
-            @for (int i = 0; i < filter?.TotalPages + 1; i++)
+            @for (int i = 1; i <= filter?.TotalPages ; i++)
             {
 
                 <li class="page-item @(i == filter?.Page ? "active" : "")">
 
-                    <a class="page-link"
+                <a class="page-link @(i == filter?.Page ? "active" : "")"
                        asp-action="Index"
                        asp-route-Page="@i"
                        asp-route-Title="@filter?.Title"
@@ -374,7 +374,7 @@
                        asp-route-SortColumn="@filter?.SortColumn"
                        asp-route-SortDescending="@filter?.SortDescending">
 
-                        @(i + 1)
+                        @(i)
 
                     </a>
 

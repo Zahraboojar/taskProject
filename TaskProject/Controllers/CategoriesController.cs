@@ -43,16 +43,14 @@ namespace TaskProject.Controllers
             // Sort
             categories = SortList(categories, cfv);
 
-            // Pagination
-            categories = categories 
-                .Skip(cfv.Page * cfv.ItemCount)
-                .Take(cfv.ItemCount)
-                .ToList();
-
-            // Total pages
             cfv.TotalPages = (int)Math.Ceiling(
-                categories.Count / (double)cfv.ItemCount
-            );
+                 categories.Count / (double)cfv.ItemCount
+             );
+
+            categories = categories
+               .Skip((cfv.Page - 1) * cfv.ItemCount)
+               .Take(cfv.ItemCount)
+               .ToList();
 
             ViewBag.Filter = cfv;
 

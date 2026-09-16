@@ -77,16 +77,15 @@ namespace TaskProject.Controllers
             // Sort
             dataList = SortList(dataList, tfv);
 
-            // Pagination
-            dataList = dataList
-                .Skip(tfv.Page * tfv.ItemCount)
-                .Take(tfv.ItemCount)
-                .ToList();
-
             // Total pages
             tfv.TotalPages = (int)Math.Ceiling(
                 dataList.Count / (double)tfv.ItemCount
             );
+
+            dataList = dataList
+               .Skip((tfv.Page - 1) * tfv.ItemCount)
+               .Take(tfv.ItemCount)
+               .ToList();
 
             ViewBag.Filter = tfv;
 

@@ -240,7 +240,7 @@
 
             <li class="page-item @(i == filter?.Page ? "active" : "")">
 
-                <a class="page-link"
+                <a class="page-link @(i == filter?.Page ? "active" : "")"
                    asp-action="Index"
                    asp-route-FullName="@filter?.FullName"
                    asp-route-NationalCode="@filter?.NationalCode"

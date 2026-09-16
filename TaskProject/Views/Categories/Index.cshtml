@@ -111,7 +111,7 @@
 
             <li class="page-item @(i == filter?.Page ? "active" : "")">
 
-                <a class="page-link"
+                <a class="page-link @(i == filter?.Page ? "active" : "")"
                    asp-action="Index"
                    asp-route-Title="@filter?.Title"
                    asp-route-Page="0"
